@@ -595,14 +595,14 @@ func updateVideoSingleTask(ctx context.Context, adaptor TaskPollingAdaptor, ch *
 func applyTaskResultURL(task *model.Task, result *relaycommon.TaskInfo) {
 	if result.RemoteUrl != "" {
 		task.PrivateData.UpstreamResultURL = result.RemoteUrl
-		task.PrivateData.ResultURL = taskcommon.BuildProxyURL(task.TaskID)
+		task.PrivateData.ResultURL = taskcommon.BuildPublicProxyURL(task.TaskID)
 	} else if strings.HasPrefix(result.Url, "data:") {
 		// Keep data URIs in task data and expose only the authenticated proxy.
-		task.PrivateData.ResultURL = taskcommon.BuildProxyURL(task.TaskID)
+		task.PrivateData.ResultURL = taskcommon.BuildPublicProxyURL(task.TaskID)
 	} else if result.Url != "" {
 		task.PrivateData.ResultURL = result.Url
 	} else {
-		task.PrivateData.ResultURL = taskcommon.BuildProxyURL(task.TaskID)
+		task.PrivateData.ResultURL = taskcommon.BuildPublicProxyURL(task.TaskID)
 	}
 }
 

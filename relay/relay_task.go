@@ -545,7 +545,7 @@ func tryRealtimeFetch(task *model.Task, isOpenAIVideoAPI bool) []byte {
 		task.PrivateData.ResultURL = ti.Url
 	} else if task.Status == model.TaskStatusSuccess {
 		// No URL from adaptor — construct proxy URL using public task ID
-		task.PrivateData.ResultURL = taskcommon.BuildProxyURL(task.TaskID)
+		task.PrivateData.ResultURL = taskcommon.BuildPublicProxyURL(task.TaskID)
 	}
 
 	if !snap.Equal(task.Snapshot()) {

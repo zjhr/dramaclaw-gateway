@@ -18,6 +18,8 @@ import (
 	"github.com/QuantumNous/new-api/relay/channel/deepseek"
 	"github.com/QuantumNous/new-api/relay/channel/dify"
 	"github.com/QuantumNous/new-api/relay/channel/doubao_audio"
+	"github.com/QuantumNous/new-api/relay/channel/elevenlabs"
+	"github.com/QuantumNous/new-api/relay/channel/senseaudio"
 	"github.com/QuantumNous/new-api/relay/channel/fal"
 	"github.com/QuantumNous/new-api/relay/channel/gemini"
 	"github.com/QuantumNous/new-api/relay/channel/jimeng"
@@ -39,6 +41,7 @@ import (
 	taskcomfyui "github.com/QuantumNous/new-api/relay/channel/task/comfyui"
 	taskdoubao "github.com/QuantumNous/new-api/relay/channel/task/doubao"
 	taskfal "github.com/QuantumNous/new-api/relay/channel/task/fal"
+	tasksenseaudio "github.com/QuantumNous/new-api/relay/channel/task/senseaudio"
 	taskGemini "github.com/QuantumNous/new-api/relay/channel/task/gemini"
 	"github.com/QuantumNous/new-api/relay/channel/task/hailuo"
 	taskjimeng "github.com/QuantumNous/new-api/relay/channel/task/jimeng"
@@ -107,6 +110,10 @@ func GetAdaptor(apiType int) channel.Adaptor {
 		return &volcengine.Adaptor{}
 	case constant.APITypeDoubaoAudio:
 		return &doubao_audio.Adaptor{}
+	case constant.APITypeSenseAudio:
+		return &senseaudio.Adaptor{}
+	case constant.APITypeElevenLabs:
+		return &elevenlabs.Adaptor{}
 	case constant.APITypeBaiduV2:
 		return &baidu_v2.Adaptor{}
 	case constant.APITypeOpenRouter:
@@ -180,6 +187,8 @@ func GetTaskAdaptor(platform constant.TaskPlatform) channel.TaskAdaptor {
 			return &taskfal.TaskAdaptor{}
 		case constant.ChannelTypeComfyUI:
 			return &taskcomfyui.TaskAdaptor{}
+		case constant.ChannelTypeSenseAudio:
+			return &tasksenseaudio.TaskAdaptor{}
 		}
 	}
 	return nil

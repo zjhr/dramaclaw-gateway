@@ -62,7 +62,11 @@ const (
 	ChannelTypeDoubaoAudio    = 62
 	// Keep 63 aligned with DramaClaw and the commercial RelayClaw channel ID.
 	ChannelTypeComfyUI = 63
-	ChannelTypeDummy   // this one is only for count, do not add any channel after this
+	// SenseAudio：音乐走私有异步任务协议，由 senseaudio 适配器转换。
+	ChannelTypeSenseAudio = 64
+	// ElevenLabs：xi-api-key 认证，语音合成的 voice_id 在 URL 路径里。
+	ChannelTypeElevenLabs = 65
+	ChannelTypeDummy      // this one is only for count, do not add any channel after this
 
 )
 
@@ -194,6 +198,8 @@ var ChannelTypeNames = map[int]string{
 	ChannelTypeFal:            "fal.ai",
 	ChannelTypeDoubaoAudio:    "DoubaoAudio",
 	ChannelTypeComfyUI:        "ComfyUI",
+	ChannelTypeSenseAudio:     "SenseAudio",
+	ChannelTypeElevenLabs:     "ElevenLabs",
 }
 
 func GetChannelTypeName(channelType int) string {

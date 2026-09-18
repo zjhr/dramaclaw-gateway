@@ -208,6 +208,11 @@ func (a *Adaptor) GetModelList() []string {
 	return ModelList
 }
 
+// DeepSeek 的模型名（deepseek-chat / deepseek-v4-pro …）不含 vision/vl 关键词，
+// 名字推断（inferModelCapabilities）拿不到视觉能力，这里显式声明。
+// 实测 deepseek-flash 与 deepseek-v4-pro 均接受 image_url 输入。
+func (a *Adaptor) GetCapabilities() []string { return []string{"text", "vision"} }
+
 func (a *Adaptor) GetChannelName() string {
 	return ChannelName
 }

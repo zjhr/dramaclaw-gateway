@@ -143,6 +143,89 @@ func (a *TaskAdaptor) BuildRequestHeader(c *gin.Context, req *http.Request, info
 	return nil
 }
 
+// normalizeOpenAIVideoBody 把 DramaClaw 发来的 NewAPI 通用视频字段翻译成上游
+// OpenAI Videos 兼容接口要的字段名，然后删掉原名。
+//
+// 上游（Sora / Agnes Video）只认 seconds(string) / aspect_ratio / size，收到
+// duration / ratio / resolution 会当未知字段直接 400。适配器本来就该做这层协议
+// 转换——不转的话，调用方设的时长和画幅永远到不了上游，只会静默落回默认值
+// （时效上表现为"设了 8 秒，出来还是 5 秒"）。
+func normalizeOpenAIVideoBody(body map[string]interface{}) {
+	if value, ok := body["duration"]; ok {
+		if _, exists := body["seconds"]; !exists {
+			body["seconds"] = videoSecondsString(value)
+		}
+	}
+	if _, exists := body["aspect_ratio"]; !exists {
+		if value, ok := body["ratio"]; ok {
+			body["aspect_ratio"] = value
+		} else if value := metadataRatio(body); value != nil {
+			// NewAPI 把画幅写在 metadata.ratio 里（顶层 ratio 会被 geometry 契约删掉），
+			// 所以取值要看两处。
+			body["aspect_ratio"] = value
+		}
+	}
+	if value, ok := body["resolution"]; ok {
+		if _, exists := body["size"]; !exists {
+			body["size"] = videoSizeString(value)
+		}
+	}
+
+	// 下面这些是 NewAPI 的内部表示，上游 OpenAI Videos 接口不认（Agnes 对未知字段
+	// 直接 400），转换完成后必须清掉，只留 seconds/aspect_ratio/size。
+	for _, key := range []string{
+		"duration", "ratio", "resolution", "metadata", "width", "height",
+	} {
+		delete(body, key)
+	}
+}
+
+// videoSecondsString 把数字时长转成上游要求的字符串形式；非数字（如 "auto"）
+// 原样透传，由上游自己报错，好过在这里静默改写。
+func videoSecondsString(value interface{}) interface{} {
+	switch v := value.(type) {
+	case string:
+		return v
+	case float64:
+		if v == float64(int64(v)) {
+			return strconv.FormatInt(int64(v), 10)
+		}
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	case int:
+		return strconv.Itoa(v)
+	default:
+		return value
+	}
+}
+
+// videoSizeString 归一化分辨率拼写。Agnes Video 只接受大写 P 的 "720P"，
+// DramaClaw 传的是 "720p"；其余档位原样透传，让上游给出明确的拒绝原因。
+func videoSizeString(value interface{}) interface{} {
+	s, ok := value.(string)
+	if !ok {
+		return value
+	}
+	if strings.EqualFold(s, "720p") {
+		return "720P"
+	}
+	return s
+}
+
+// metadataRatio 取出 NewAPI geometry 契约收进 metadata 的画幅值。空串与缺失
+// 一视同仁返回 nil，避免把空值当成有效画幅发给上游。
+func metadataRatio(body map[string]interface{}) interface{} {
+	metadata, ok := body["metadata"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	for _, key := range []string{"ratio", "aspect_ratio"} {
+		if value, ok := metadata[key].(string); ok && strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return nil
+}
+
 func (a *TaskAdaptor) BuildRequestBody(c *gin.Context, info *relaycommon.RelayInfo) (io.Reader, error) {
 	storage, err := common.GetBodyStorage(c)
 	if err != nil {
@@ -158,6 +241,7 @@ func (a *TaskAdaptor) BuildRequestBody(c *gin.Context, info *relaycommon.RelayIn
 		var bodyMap map[string]interface{}
 		if err := common.Unmarshal(cachedBody, &bodyMap); err == nil {
 			bodyMap["model"] = info.UpstreamModelName
+			normalizeOpenAIVideoBody(bodyMap)
 			if newBody, err := common.Marshal(bodyMap); err == nil {
 				return bytes.NewReader(newBody), nil
 			}
